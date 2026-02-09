@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @Table(name = "addresses")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Adress {
+public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;

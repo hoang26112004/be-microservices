@@ -1,0 +1,86 @@
+package com.example.be_microservices.comom.exception;
+
+import com.example.technova_be.comom.response.ErrorResponse;
+import com.example.technova_be.comom.response.GlobalResponse;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.util.stream.Collectors;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(GlobalResponse.error(ErrorResponse.of("NOT_FOUND", ex.getMessage())));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.badRequest()
+                .body(GlobalResponse.error(ErrorResponse.of("BAD_REQUEST", ex.getMessage())));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest()
+                .body(GlobalResponse.error(ErrorResponse.of("BAD_REQUEST", ex.getMessage())));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+        if (message.isBlank()) {
+            message = "Validation failed";
+        }
+        return ResponseEntity.badRequest()
+                .body(GlobalResponse.error(ErrorResponse.of("VALIDATION_ERROR", message)));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleConstraintViolation(ConstraintViolationException ex) {
+        return ResponseEntity.badRequest()
+                .body(GlobalResponse.error(ErrorResponse.of("VALIDATION_ERROR", ex.getMessage())));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleAuth(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(GlobalResponse.error(ErrorResponse.of("UNAUTHORIZED", ex.getMessage())));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(GlobalResponse.error(ErrorResponse.of("FORBIDDEN", ex.getMessage())));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleUnexpected(Exception ex) {
+        log.error("Unexpected error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(GlobalResponse.error(ErrorResponse.of("INTERNAL_ERROR", ex.getMessage() != null ? ex.getMessage() : "Unexpected error")));
+    }
+    // Thêm cái này để bắt các lỗi nghiệp vụ như "Hết hàng", "Giỏ hàng trống"...
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<GlobalResponse<ErrorResponse>> handleRuntimeException(RuntimeException ex) {
+        log.error("Runtime error", ex);
+        return ResponseEntity.badRequest()
+                .body(GlobalResponse.error(ErrorResponse.of("BUSINESS_ERROR", ex.getMessage())));
+    }
+}

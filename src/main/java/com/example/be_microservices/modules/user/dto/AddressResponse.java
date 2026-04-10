@@ -1,0 +1,24 @@
+package com.example.be_microservices.modules.user.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class AddressResponse {
+    private Long id;
+    private String phoneNumber;
+    private String street;
+    private String city;
+    private String state;
+    private String country;
+    private String zipCode;
+    private String description;
+    private boolean isDefault;
+
+    @JsonProperty("isDefault")
+    public boolean isDefault() {
+        return isDefault;
+    }
+}

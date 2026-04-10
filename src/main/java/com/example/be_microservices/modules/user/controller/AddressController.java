@@ -1,0 +1,75 @@
+package com.example.be_microservices.modules.user.controller;
+
+
+import com.example.technova_be.comom.exception.BadRequestException;
+import com.example.technova_be.comom.response.GlobalResponse;
+import com.example.technova_be.comom.response.MessageResponse;
+import com.example.technova_be.modules.user.dto.AddressRequest;
+import com.example.technova_be.modules.user.dto.AddressResponse;
+import com.example.technova_be.modules.user.service.AddressService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/addresses")
+public class AddressController {
+    private final AddressService addressService;
+
+    public AddressController(AddressService addressService) {
+        this.addressService = addressService;
+    }
+
+    @GetMapping
+    public ResponseEntity<GlobalResponse<List<AddressResponse>>> getOwnAddresses(Authentication auth) {
+        return ResponseEntity.ok(GlobalResponse.ok(addressService.getOwnAddresses(requireUserId(auth))));
+    }
+
+    @PostMapping
+    public ResponseEntity<GlobalResponse<AddressResponse>> createAddress(
+            @RequestBody AddressRequest address,
+            Authentication auth
+    ) {
+        return ResponseEntity.ok(GlobalResponse.ok(addressService.createAddress(requireUserId(auth), address)));
+    }
+
+    @GetMapping("/{addressId}")
+    public ResponseEntity<GlobalResponse<AddressResponse>> getAddressById(
+            @PathVariable Long addressId,
+            Authentication auth
+    ) {
+        return ResponseEntity.ok(GlobalResponse.ok(addressService.getAddressById(addressId, requireUserId(auth))));
+    }
+
+    @PutMapping("/{addressId}")
+    public ResponseEntity<GlobalResponse<AddressResponse>> updateAddress(
+            @PathVariable Long addressId,
+            @RequestBody AddressRequest address,
+            Authentication auth
+    ) {
+        return ResponseEntity.ok(GlobalResponse.ok(addressService.updateAddress(addressId, requireUserId(auth), address)));
+    }
+
+    @DeleteMapping("/{addressId}")
+    public ResponseEntity<GlobalResponse<MessageResponse>> deleteAddress(
+            @PathVariable Long addressId,
+            Authentication auth
+    ) {
+        addressService.deleteAddress(addressId, requireUserId(auth));
+        return ResponseEntity.ok(GlobalResponse.ok(new MessageResponse("Deleted")));
+    }
+
+    private Long requireUserId(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            throw new AuthenticationCredentialsNotFoundException("Unauthorized");
+        }
+        try {
+            return Long.parseLong(auth.getName());
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("Invalid user id");
+        }
+    }
+}
